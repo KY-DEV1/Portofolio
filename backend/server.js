@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -16,7 +17,7 @@ app.use(helmet({
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://your-vercel-app.vercel.app', // Ganti dengan domain Vercel Anda
+    'https://your-vercel-app.vercel.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true
@@ -35,15 +36,32 @@ app.use('/api/', limiter);
 // Serve static files from frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Database connection dengan fallback untuk Vercel
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/profile_db';
+// MongoDB Connection dengan error handling
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+connectDB();
+
+// Email transporter configuration
+const createTransporter = () => {
+  return nodemailer.createTransporter({
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS, // App password untuk Gmail
+    },
+  });
+};
 
 // Routes
 app.use('/api/contact', require('./routes/contactRoutes'));
@@ -53,7 +71,8 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
 
@@ -72,21 +91,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler untuk API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ 
-    success: false,
-    message: 'API route not found' 
-  });
-});
-
-// Export untuk Vercel
 module.exports = app;
-
-// Local development
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-  });
-    }
