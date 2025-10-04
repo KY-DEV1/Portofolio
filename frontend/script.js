@@ -241,18 +241,98 @@ const observer = new IntersectionObserver((entries) => {
         if (entry.isIntersecting) {
             entry.target.classList.add('fade-in-up');
             
-            // Animasi khusus untuk skill bars
-            if (entry.target.classList.contains('skill-level')) {
-                const width = entry.target.getAttribute('data-width');
-                if (width) {
+            // Function untuk animasi skill bars
+function animateSkillBars() {
+    const skillBars = document.querySelectorAll('.skill-level');
+    
+    skillBars.forEach((bar, index) => {
+        const width = bar.getAttribute('data-width');
+        if (width) {
+            // Reset width to 0 untuk animasi
+            bar.style.width = '0';
+            
+            // Animate after a delay
+            setTimeout(() => {
+                bar.style.width = width;
+                bar.classList.add('animated');
+                
+                // Animate percentage counter
+                const percentageElement = bar.closest('.skill-item').querySelector('.skill-percentage');
+                if (percentageElement) {
+                    animatePercentage(percentageElement, parseInt(width));
+                }
+            }, 300 + (index * 100));
+        }
+    });
+}
+
+// Function untuk animasi persentase (counting effect)
+function animatePercentage(element, targetPercentage) {
+    let current = 0;
+    const duration = 1500;
+    const increment = targetPercentage / (duration / 16);
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= targetPercentage) {
+            element.textContent = targetPercentage + '%';
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current) + '%';
+        }
+    }, 16);
+}
+
+// Update Intersection Observer untuk skill bars
+const skillObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const skillItem = entry.target;
+            skillItem.classList.add('fade-in-up');
+            
+            // Animate skill bars ketika skill item terlihat
+            if (skillItem.classList.contains('skill-item')) {
+                const skillBar = skillItem.querySelector('.skill-level');
+                if (skillBar) {
+                    const width = skillBar.getAttribute('data-width');
                     setTimeout(() => {
-                        entry.target.style.width = width;
+                        skillBar.style.width = width;
                     }, 200);
                 }
             }
         }
     });
-}, observerOptions);
+}, {
+    threshold: 0.2,
+    rootMargin: '0px 0px -50px 0px'
+});
+
+// Observe skill items
+document.querySelectorAll('.skill-item').forEach(item => {
+    skillObserver.observe(item);
+});
+
+// Initialize skill bars animation ketika page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Delay sedikit untuk memastikan semua element sudah loaded
+    setTimeout(animateSkillBars, 500);
+});
+
+// Re-animate skill bars ketika section skills masuk viewport
+const skillsSection = document.getElementById('skills');
+if (skillsSection) {
+    const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateSkillBars();
+            }
+        });
+    }, {
+        threshold: 0.3
+    });
+    
+    sectionObserver.observe(skillsSection);
+      }
 
 // Observe elements for animation
 document.addEventListener('DOMContentLoaded', () => {
@@ -647,3 +727,4 @@ window.addEventListener('load', () => {
         });
     }
 });
+
