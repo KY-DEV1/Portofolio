@@ -10,6 +10,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 🔧 FIX: Configure trust proxy for Vercel
+app.set('trust proxy', 1); // Trust first proxy
+
 // Enhanced environment variables debug
 console.log('🚀 Starting server...');
 console.log('=== ENVIRONMENT VARIABLES CHECK ===');
@@ -35,18 +38,29 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
+// 🔧 FIX: Rate limiting dengan configuration yang benar
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: 'Too many requests from this IP'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // 🔧 FIX: Key generator yang compatible dengan proxy
+  keyGenerator: (req, res) => {
+    // Gunakan X-Forwarded-For header jika ada (dari Vercel)
+    return req.ip;
+  }
 });
+
 app.use('/api/', limiter);
 
 // Serve static files from frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// MongoDB Connection dengan error handling yang lebih baik
+// MongoDB Connection
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
@@ -64,26 +78,21 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
     
-    // FIX: Safe way to log connection details
     console.log('✅ MongoDB Connected successfully!');
     console.log(`📊 Database: ${conn.connection.name}`);
-    console.log(`🎯 Host: ${conn.connection.host}`);
-    console.log(`🔢 Port: ${conn.connection.port}`);
     
     return conn;
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
-    
-    // Don't exit in production, just log and continue
     console.log('⚠️  Continuing without database connection');
     return null;
   }
 };
 
-// Initialize database dengan async handling
+// Initialize server
 const initializeServer = async () => {
   try {
-    // Connect to MongoDB (non-blocking)
+    // Connect to MongoDB
     const dbConnection = await connectDB();
     
     // Routes
@@ -100,6 +109,7 @@ const initializeServer = async () => {
       };
 
       res.json({ 
+        success: true,
         status: 'OK', 
         message: 'Server is running',
         timestamp: new Date().toISOString(),
@@ -117,11 +127,14 @@ const initializeServer = async () => {
     // Test endpoint untuk check environment variables
     app.get('/api/debug-env', (req, res) => {
       res.json({
+        success: true,
         MONGODB_URI: process.env.MONGODB_URI ? '***SET***' : 'UNDEFINED',
         EMAIL_USER: process.env.EMAIL_USER ? '***SET***' : 'UNDEFINED', 
         NODE_ENV: process.env.NODE_ENV,
         FRONTEND_URL: process.env.FRONTEND_URL,
-        server_time: new Date().toISOString()
+        server_time: new Date().toISOString(),
+        ip: req.ip,
+        trusted_proxy: app.get('trust proxy')
       });
     });
 
@@ -152,9 +165,19 @@ const initializeServer = async () => {
         res.status(500).json({
           success: false,
           message: 'Database test failed',
-          error: error.message
+          error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message
         });
       }
+    });
+
+    // Simple test endpoint tanpa rate limiting
+    app.get('/api/test', (req, res) => {
+      res.json({
+        success: true,
+        message: 'API is working!',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV
+      });
     });
 
     // Serve frontend untuk semua route lainnya
@@ -172,23 +195,15 @@ const initializeServer = async () => {
       });
     });
 
-    // 404 handler untuk API routes
-    app.use('/api/*', (req, res) => {
-      res.status(404).json({ 
-        success: false,
-        message: 'API route not found' 
-      });
-    });
-
     console.log('✅ Server initialized successfully!');
     
   } catch (error) {
     console.error('❌ Server initialization failed:', error);
-    process.exit(1);
   }
 };
 
 // Start the server
 initializeServer();
 
-module.exports = app;
+// Export untuk Vercel
+module.exports = app;  ' 
