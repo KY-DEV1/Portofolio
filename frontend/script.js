@@ -1,7 +1,7 @@
 // Konfigurasi API URL untuk production
 const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000/api' 
-  : '/api';
+    ? 'http://localhost:3000/api' 
+    : '/api';
 
 // Smooth scrolling untuk navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -16,7 +16,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             
             // Close mobile menu jika terbuka
             if (window.innerWidth <= 768) {
-                navLinks.style.display = 'none';
+                navLinks.classList.remove('active');
                 hamburger.classList.remove('active');
             }
         }
@@ -29,11 +29,20 @@ const navLinks = document.querySelector('.nav-links');
 
 if (hamburger && navLinks) {
     hamburger.addEventListener('click', () => {
-        const isVisible = navLinks.style.display === 'flex';
-        navLinks.style.display = isVisible ? 'none' : 'flex';
+        navLinks.classList.toggle('active');
         hamburger.classList.toggle('active');
     });
 }
+
+// Close mobile menu ketika klik di luar
+document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768) {
+        if (!e.target.closest('nav') && navLinks.classList.contains('active')) {
+            navLinks.classList.remove('active');
+            hamburger.classList.remove('active');
+        }
+    }
+});
 
 // Form submission dengan validasi dan loading state
 const contactForm = document.getElementById('contactForm');
@@ -103,6 +112,9 @@ function validateForm() {
     if (!name) {
         showError('name', 'Nama harus diisi');
         isValid = false;
+    } else if (name.length < 2) {
+        showError('name', 'Nama terlalu pendek');
+        isValid = false;
     }
     
     if (!email) {
@@ -115,6 +127,9 @@ function validateForm() {
     
     if (!subject) {
         showError('subject', 'Subjek harus diisi');
+        isValid = false;
+    } else if (subject.length < 5) {
+        showError('subject', 'Subjek terlalu pendek');
         isValid = false;
     }
     
@@ -147,9 +162,6 @@ function showError(fieldId, message) {
     const errorElement = document.createElement('div');
     errorElement.className = 'error-message';
     errorElement.textContent = message;
-    errorElement.style.color = '#e74c3c';
-    errorElement.style.fontSize = '0.875rem';
-    errorElement.style.marginTop = '5px';
     
     formGroup.appendChild(errorElement);
 }
@@ -180,28 +192,6 @@ function showNotification(message, type = 'info') {
     notification.className = `notification ${type}`;
     notification.textContent = message;
     
-    // Styling notification
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.padding = '15px 20px';
-    notification.style.borderRadius = '5px';
-    notification.style.color = 'white';
-    notification.style.fontWeight = '500';
-    notification.style.zIndex = '10000';
-    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    notification.style.transform = 'translateX(100%)';
-    notification.style.transition = 'transform 0.3s ease';
-    
-    // Set background color based on type
-    if (type === 'success') {
-        notification.style.backgroundColor = '#27ae60';
-    } else if (type === 'error') {
-        notification.style.backgroundColor = '#e74c3c';
-    } else {
-        notification.style.backgroundColor = '#3498db';
-    }
-    
     document.body.appendChild(notification);
     
     // Animate in
@@ -230,6 +220,68 @@ function showNotification(message, type = 'info') {
     });
 }
 
+// Function untuk animasi skill bars
+function initSkillBars() {
+    const skillProgresses = document.querySelectorAll('.skill-progress');
+    
+    // Reset semua progress bar ke 0
+    skillProgresses.forEach(progress => {
+        progress.style.width = '0%';
+    });
+    
+    // Observer untuk skill section
+    const skillsSection = document.getElementById('skills');
+    if (!skillsSection) return;
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Animate skill bars dengan delay bertahap
+                skillProgresses.forEach((progress, index) => {
+                    const width = progress.getAttribute('data-width') + '%';
+                    
+                    setTimeout(() => {
+                        progress.style.width = width;
+                        
+                        // Animate percentage text
+                        const percentageElement = progress.closest('.skill-item').querySelector('.skill-percentage');
+                        if (percentageElement) {
+                            animatePercentageCounter(percentageElement, parseInt(progress.getAttribute('data-width')));
+                        }
+                    }, index * 200);
+                });
+                
+                // Stop observing setelah di-trigger
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.3,
+        rootMargin: '0px 0px -100px 0px'
+    });
+    
+    observer.observe(skillsSection);
+}
+
+// Function untuk animasi counter persentase
+function animatePercentageCounter(element, targetValue) {
+    let current = 0;
+    const duration = 1500;
+    const steps = 60;
+    const increment = targetValue / steps;
+    const stepDuration = duration / steps;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= targetValue) {
+            element.textContent = targetValue + '%';
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current) + '%';
+        }
+    }, stepDuration);
+}
+
 // Scroll animations dengan Intersection Observer
 const observerOptions = {
     threshold: 0.1,
@@ -240,74 +292,9 @@ const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.classList.add('fade-in-up');
-            
-            // Function untuk animasi skill bars
-function animateSkillBars() {
-    const skillBars = document.querySelectorAll('.skill-level');
-    
-    skillBars.forEach((bar, index) => {
-        const width = bar.getAttribute('data-width');
-        if (width) {
-            // Reset width to 0 untuk animasi
-            bar.style.width = '0';
-            
-            // Animate after a delay
-            setTimeout(() => {
-                bar.style.width = width;
-                bar.classList.add('animated');
-                
-                // Animate percentage counter
-                const percentageElement = bar.closest('.skill-item').querySelector('.skill-percentage');
-                if (percentageElement) {
-                    animatePercentage(percentageElement, parseInt(width));
-                }
-            }, 300 + (index * 100));
         }
     });
-}
-
-// Function untuk animasi persentase (counting effect)
-function animatePercentage(element, targetPercentage) {
-    let current = 0;
-    const duration = 1500;
-    const increment = targetPercentage / (duration / 16);
-    
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= targetPercentage) {
-            element.textContent = targetPercentage + '%';
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current) + '%';
-        }
-    }, 16);
-}
-
-// Update Intersection Observer untuk skill bars
-const skillObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const skillItem = entry.target;
-            skillItem.classList.add('fade-in-up');
-            
-            // Animate skill bars ketika skill item terlihat
-            if (skillItem.classList.contains('skill-item')) {
-                const skillBar = skillItem.querySelector('.skill-level');
-                if (skillBar) {
-                    const width = skillBar.getAttribute('data-width');
-                    setTimeout(() => {
-                        skillBar.style.width = width;
-                    }, 200);
-                }
-            }
-        }
-    });
-}, {
-    threshold: 0.2,
-    rootMargin: '0px 0px -50px 0px'
-});
-
-// Observe skill items
+}, observerOptions);
 
 // Navbar background on scroll dengan throttling
 let scrollTimeout;
@@ -385,104 +372,45 @@ function initTypingEffect() {
 function initCounterAnimation() {
     const stats = document.querySelectorAll('.stat h3');
     
-    stats.forEach(stat => {
-        const target = parseInt(stat.textContent);
-        const duration = 2000;
-        const step = target / (duration / 16);
-        let current = 0;
-        
-        const updateCounter = () => {
-            current += step;
-            if (current < target) {
-                stat.textContent = Math.floor(current) + '+';
-                requestAnimationFrame(updateCounter);
-            } else {
-                stat.textContent = target + '+';
-            }
-        };
-        
-        // Start counter ketika stat visible
-        const statObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    updateCounter();
-                    statObserver.unobserve(entry.target);
-                }
-            });
-        });
-        
-        statObserver.observe(stat.parentElement);
-    });
-}
-
-// Filter portfolio items (jika ada filter nanti)
-function initPortfolioFilter() {
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    const portfolioItems = document.querySelectorAll('.portfolio-item');
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            // Remove active class dari semua buttons
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active class ke button yang diklik
-            button.classList.add('active');
-            
-            const filterValue = button.getAttribute('data-filter');
-            
-            portfolioItems.forEach(item => {
-                if (filterValue === 'all' || item.getAttribute('data-category') === filterValue) {
-                    item.style.display = 'block';
-                    setTimeout(() => {
-                        item.style.opacity = '1';
-                        item.style.transform = 'scale(1)';
-                    }, 100);
-                } else {
-                    item.style.opacity = '0';
-                    item.style.transform = 'scale(0.8)';
-                    setTimeout(() => {
-                        item.style.display = 'none';
-                    }, 300);
-                }
-            });
-        });
-    });
-}
-
-// Image lazy loading
-function initLazyLoading() {
-    const images = document.querySelectorAll('img[data-src]');
-    
-    const imageObserver = new IntersectionObserver((entries, observer) => {
+    const statObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.getAttribute('data-src');
-                img.classList.remove('lazy');
-                imageObserver.unobserve(img);
+                const stat = entry.target;
+                const target = parseInt(stat.textContent);
+                const duration = 2000;
+                const step = target / (duration / 16);
+                let current = 0;
+                
+                const updateCounter = () => {
+                    current += step;
+                    if (current < target) {
+                        stat.textContent = Math.floor(current) + '+';
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        stat.textContent = target + '+';
+                    }
+                };
+                
+                updateCounter();
+                statObserver.unobserve(stat);
             }
         });
+    }, {
+        threshold: 0.5
     });
     
-    images.forEach(img => imageObserver.observe(img));
+    stats.forEach(stat => {
+        statObserver.observe(stat);
+    });
 }
 
-// Theme switcher (optional)
+// Theme switcher
 function initThemeSwitcher() {
     const themeToggle = document.createElement('button');
     themeToggle.innerHTML = '🌙';
     themeToggle.className = 'theme-toggle';
-    themeToggle.style.position = 'fixed';
-    themeToggle.style.bottom = '20px';
-    themeToggle.style.right = '20px';
-    themeToggle.style.zIndex = '1000';
-    themeToggle.style.background = 'var(--primary)';
-    themeToggle.style.color = 'white';
-    themeToggle.style.border = 'none';
-    themeToggle.style.borderRadius = '50%';
-    themeToggle.style.width = '50px';
-    themeToggle.style.height = '50px';
-    themeToggle.style.cursor = 'pointer';
-    themeToggle.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    themeToggle.setAttribute('aria-label', 'Toggle dark mode');
+    themeToggle.title = 'Toggle dark mode';
     
     themeToggle.addEventListener('click', () => {
         document.body.classList.toggle('dark-theme');
@@ -501,46 +429,6 @@ function initThemeSwitcher() {
     
     document.body.appendChild(themeToggle);
 }
-
-// CSS untuk dark theme
-const darkThemeStyles = `
-    .dark-theme {
-        --primary: #3498db;
-        --secondary: #1a2530;
-        --accent: #e74c3c;
-        --light: #2c3e50;
-        --dark: #ecf0f1;
-        background-color: #1a2530;
-        color: #ecf0f1;
-    }
-    
-    .dark-theme .skill-bar {
-        background-color: #34495e;
-    }
-    
-    .dark-theme .portfolio-item,
-    .dark-theme .stat {
-        background-color: #2c3e50;
-        color: #ecf0f1;
-    }
-    
-    .dark-theme .form-group input,
-    .dark-theme .form-group textarea {
-        background-color: #2c3e50;
-        color: #ecf0f1;
-        border-color: #34495e;
-    }
-    
-    .dark-theme .form-group input:focus,
-    .dark-theme .form-group textarea:focus {
-        border-color: var(--primary);
-    }
-`;
-
-// Add dark theme styles to document
-const styleSheet = document.createElement('style');
-styleSheet.textContent = darkThemeStyles;
-document.head.appendChild(styleSheet);
 
 // Form input real-time validation
 function initRealTimeValidation() {
@@ -567,52 +455,42 @@ function initRealTimeValidation() {
     });
 }
 
+// Portfolio item hover effects
+function initPortfolioHover() {
+    const portfolioItems = document.querySelectorAll('.portfolio-item');
+    
+    portfolioItems.forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            item.style.transform = 'translateY(-10px) scale(1.02)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+}
+
 // Initialize semua fungsi ketika DOM loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
+    // Observe elements for animation
+    document.querySelectorAll('section, .portfolio-item, .skill-item, .stat, .skill-category').forEach(el => {
+        observer.observe(el);
+    });
+    
+    // Initialize berbagai fitur
     initTypingEffect();
     initCounterAnimation();
-    initPortfolioFilter();
-    initLazyLoading();
+    initSkillBars();
     initThemeSwitcher();
     initRealTimeValidation();
+    initPortfolioHover();
+    updateActiveNavLink();
     
-    // Add CSS untuk error states
-    const errorStyles = `
-        .form-group input.error,
-        .form-group textarea.error {
-            border-color: #e74c3c !important;
-            box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.1);
-        }
-        
-        .form-group.focused input,
-        .form-group.focused textarea {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
-        }
-        
-        .nav-links a.active {
-            color: var(--primary) !important;
-        }
-        
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
-        
-        .typing-cursor {
-            border-right: 2px solid var(--primary);
-            animation: blink 1s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 50% { border-color: var(--primary) }
-            51%, 100% { border-color: transparent }
-        }
-    `;
-    
-    const errorStyleSheet = document.createElement('style');
-    errorStyleSheet.textContent = errorStyles;
-    document.head.appendChild(errorStyleSheet);
+    // Setup skill bars data attributes
+    document.querySelectorAll('.skill-progress').forEach(progress => {
+        const width = progress.getAttribute('data-width');
+        progress.setAttribute('data-width', width);
+    });
 });
 
 // Handle page visibility (pause animations ketika tab tidak aktif)
@@ -624,37 +502,7 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// Export functions untuk testing (jika diperlukan)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        validateForm,
-        isValidEmail,
-        showError,
-        clearErrors,
-        showNotification
-    };
-}
-
-// Service Worker Registration (Progressive Web App)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('SW registered: ', registration);
-            })
-            .catch(registrationError => {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
-}
-
-// Error boundary untuk catching JavaScript errors
-window.addEventListener('error', (event) => {
-    console.error('JavaScript Error:', event.error);
-    // Bisa dikirim ke error tracking service seperti Sentry
-});
-
- // Performance monitoring
+// Performance monitoring
 window.addEventListener('load', () => {
     // Measure page load time
     const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
@@ -670,4 +518,30 @@ window.addEventListener('load', () => {
     }
 });
 
+// Error boundary untuk catching JavaScript errors
+window.addEventListener('error', (event) => {
+    console.error('JavaScript Error:', event.error);
+});
 
+// Resize handler
+window.addEventListener('resize', () => {
+    // Close mobile menu pada resize ke desktop
+    if (window.innerWidth > 768 && navLinks.classList.contains('active')) {
+        navLinks.classList.remove('active');
+        hamburger.classList.remove('active');
+    }
+});
+
+// Export functions untuk testing (jika diperlukan)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        validateForm,
+        isValidEmail,
+        showError,
+        clearErrors,
+        showNotification,
+        initSkillBars
+    };
+}
+
+console.log('Website profile loaded successfully! 🚀');
