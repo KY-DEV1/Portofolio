@@ -617,4 +617,97 @@ footer {
     animation: fadeInUp 0.6s ease-out;
 }
 
+/* Theme Toggle Button */
+.theme-toggle {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1000;
+    background: var(--primary);
+    color: var(--white);
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+    transition: all 0.3s ease;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
 
+.theme-toggle:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 12px 30px rgba(52, 152, 219, 0.4);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Dark Theme Styles */
+.dark-theme {
+    --text: #ecf0f1;
+    --text-light: #bdc3c7;
+    --background: #1a2530;
+    --white: #2c3e50;
+    --border: #34495e;
+    --light: #34495e;
+}
+
+.dark-theme .skill-bar {
+    background: #34495e;
+}
+
+.dark-theme .portfolio-item,
+.dark-theme .stat,
+.dark-theme .skill-category {
+    background: #2c3e50;
+    color: var(--text);
+}
+
+.dark-theme .about {
+    background: var(--background);
+}
+
+.dark-theme .portfolio {
+    background: var(--background);
+}
+
+.dark-theme .skills {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+.dark-theme .contact-form input,
+.dark-theme .contact-form textarea {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .contact-form input:focus,
+.dark-theme .contact-form textarea:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+}
+
+.dark-theme .detail-item {
+    border-bottom-color: var(--border);
+}
+
+.dark-theme .skill-category h3 {
+    border-bottom-color: var(--border);
+}
+
+/* Smooth theme transition */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
