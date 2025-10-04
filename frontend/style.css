@@ -228,29 +228,50 @@ section {
     margin-bottom: 10px;
 }
 
-/* Skills Section Styles */
+/* Skills Section */
+.skills {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 80px 0;
+}
+
 .skills-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 40px;
+    margin-top: 50px;
+}
+
+.skill-category {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.skill-category:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
 .skill-category h3 {
-    margin-bottom: 25px;
     color: var(--secondary);
     font-size: 1.5rem;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid var(--primary);
     position: relative;
-    padding-bottom: 10px;
 }
 
 .skill-category h3::after {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: -3px;
     left: 0;
     width: 50px;
     height: 3px;
-    background-color: var(--primary);
+    background: var(--primary);
 }
 
 .skill-items {
@@ -265,13 +286,14 @@ section {
     gap: 12px;
 }
 
-.skill-header {
+.skill-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 8px;
 }
 
-.skill-header span:first-child {
+.skill-name {
     font-weight: 600;
     color: var(--dark);
     font-size: 1rem;
@@ -282,75 +304,92 @@ section {
     color: var(--primary);
     font-size: 0.9rem;
     background: rgba(52, 152, 219, 0.1);
-    padding: 4px 8px;
-    border-radius: 12px;
-    min-width: 45px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    min-width: 50px;
     text-align: center;
+    border: 2px solid rgba(52, 152, 219, 0.2);
 }
 
+/* Skill Bar Styling - INI YANG DIPERBAIKI */
 .skill-bar {
     height: 12px;
-    background-color: #e0e0e0;
+    background: #e9ecef;
     border-radius: 10px;
     overflow: hidden;
     position: relative;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #dee2e6;
 }
 
-.skill-level {
+.skill-progress {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary), #2980b9);
+    background: linear-gradient(90deg, 
+        var(--primary) 0%, 
+        #2980b9 50%, 
+        var(--primary) 100%);
     border-radius: 10px;
-    width: 0;
-    transition: width 1.5s ease-in-out;
+    width: 0%;
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
-/* Optional: Add animation to skill level */
-.skill-level.animated {
-    animation: skillProgress 1.5s ease-in-out forwards;
+/* Striped effect untuk progress bar */
+.skill-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 1rem 1rem;
+    border-radius: 10px;
 }
 
-@keyframes skillProgress {
+/* Glow effect saat hover */
+.skill-item:hover .skill-progress {
+    box-shadow: 0 2px 12px rgba(52, 152, 219, 0.5);
+}
+
+.skill-item:hover .skill-percentage {
+    background: rgba(52, 152, 219, 0.2);
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+/* Animation untuk skill progress */
+@keyframes fillBar {
     from {
-        width: 0;
+        width: 0%;
     }
     to {
-        width: attr(data-width);
+        width: var(--target-width);
     }
 }
 
-/* Tooltip untuk skill bar (optional) */
-.skill-bar::after {
-    content: attr(data-skill-level);
-    position: absolute;
-    right: -30px;
-    top: -25px;
-    background: var(--secondary);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.skill-bar:hover::after {
-    opacity: 1;
-}
-
-/* Responsive Design untuk Skills */
+/* Responsive Design */
 @media (max-width: 768px) {
     .skills-grid {
         grid-template-columns: 1fr;
         gap: 30px;
     }
     
-    .skill-category h3 {
-        font-size: 1.3rem;
+    .skill-category {
+        padding: 25px 20px;
     }
     
-    .skill-header {
+    .skill-info {
         flex-direction: column;
         align-items: flex-start;
         gap: 5px;
@@ -358,6 +397,17 @@ section {
     
     .skill-percentage {
         align-self: flex-end;
+        margin-top: -30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .skills-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .skill-category h3 {
+        font-size: 1.3rem;
     }
 }
 
@@ -566,4 +616,5 @@ footer {
 .fade-in-up {
     animation: fadeInUp 0.6s ease-out;
 }
+
 
