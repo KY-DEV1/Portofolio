@@ -308,64 +308,6 @@ const skillObserver = new IntersectionObserver((entries) => {
 });
 
 // Observe skill items
-document.querySelectorAll('.skill-item').forEach(item => {
-    skillObserver.observe(item);
-});
-
-// Initialize skill bars animation ketika page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Delay sedikit untuk memastikan semua element sudah loaded
-    setTimeout(animateSkillBars, 500);
-});
-
-// Re-animate skill bars ketika section skills masuk viewport
-const skillsSection = document.getElementById('skills');
-if (skillsSection) {
-    const sectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                animateSkillBars();
-            }
-        });
-    }, {
-        threshold: 0.3
-    });
-    
-    sectionObserver.observe(skillsSection);
-      }
-
-// Observe elements for animation
-document.addEventListener('DOMContentLoaded', () => {
-    // Observe sections
-    document.querySelectorAll('section').forEach(section => {
-        observer.observe(section);
-    });
-    
-    // Observe portfolio items
-    document.querySelectorAll('.portfolio-item').forEach(item => {
-        observer.observe(item);
-    });
-    
-    // Observe skill items dengan delay
-    document.querySelectorAll('.skill-item').forEach((item, index) => {
-        setTimeout(() => {
-            observer.observe(item);
-        }, index * 100);
-    });
-    
-    // Observe stats
-    document.querySelectorAll('.stat').forEach(stat => {
-        observer.observe(stat);
-    });
-    
-    // Setup skill bars data attributes
-    document.querySelectorAll('.skill-level').forEach(bar => {
-        const width = bar.style.width;
-        bar.setAttribute('data-width', width);
-        bar.style.width = '0';
-        bar.style.transition = 'width 1s ease-in-out';
-    });
-});
 
 // Navbar background on scroll dengan throttling
 let scrollTimeout;
@@ -727,4 +669,5 @@ window.addEventListener('load', () => {
         });
     }
 });
+
 
