@@ -1,4 +1,4 @@
-require('dotenv').config(); // Pastikan ini di paling atas
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -16,13 +16,8 @@ console.log('=== ENVIRONMENT VARIABLES CHECK ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
 console.log('MONGODB_URI:', process.env.MONGODB_URI ? '✅ SET' : '❌ UNDEFINED');
-console.log('MONGODB_URL:', process.env.MONGODB_URL ? '✅ SET' : '❌ UNDEFINED');
 console.log('EMAIL_USER:', process.env.EMAIL_USER ? '✅ SET' : '❌ UNDEFINED');
 console.log('FRONTEND_URL:', process.env.FRONTEND_URL || '❌ UNDEFINED');
-
-// Check all possible MongoDB URI sources
-const mongoURI = process.env.MONGODB_URI || process.env.MONGODB_URL;
-console.log('Final MongoDB URI:', mongoURI ? '✅ AVAILABLE' : '❌ MISSING');
 console.log('================================');
 
 // Middleware
@@ -51,16 +46,13 @@ app.use('/api/', limiter);
 // Serve static files from frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// MongoDB Connection dengan support multiple environment variable names
+// MongoDB Connection dengan error handling yang lebih baik
 const connectDB = async () => {
   try {
-    // Support both MONGODB_URI and MONGODB_URL
-    const mongoURI = process.env.MONGODB_URI || process.env.MONGODB_URL;
+    const mongoURI = process.env.MONGODB_URI;
     
     if (!mongoURI) {
-      const errorMsg = 'MongoDB URI is not defined. Please set MONGODB_URI or MONGODB_URL environment variable.';
-      console.error('❌', errorMsg);
-      throw new Error(errorMsg);
+      throw new Error('MONGODB_URI is not defined');
     }
 
     console.log('🔗 Attempting to connect to MongoDB...');
@@ -72,111 +64,131 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
     
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-    console.log(`📊 Database: ${conn.connection.db.databaseName}`);
+    // FIX: Safe way to log connection details
+    console.log('✅ MongoDB Connected successfully!');
+    console.log(`📊 Database: ${conn.connection.name}`);
+    console.log(`🎯 Host: ${conn.connection.host}`);
+    console.log(`🔢 Port: ${conn.connection.port}`);
+    
     return conn;
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     
-    // Detailed debug information
-    console.log('🔍 Debug Info:');
-    console.log('- NODE_ENV:', process.env.NODE_ENV);
-    console.log('- Available DB vars:', {
-      MONGODB_URI: !!process.env.MONGODB_URI,
-      MONGODB_URL: !!process.env.MONGODB_URL
-    });
-    
-    if (process.env.NODE_ENV === 'production') {
-      console.log('💥 Production mode - exiting...');
-      process.exit(1);
-    } else {
-      console.log('⚠️  Development mode - continuing without DB');
-    }
-  }
-};
-
-// Initialize database
-connectDB();
-
-// ... rest of your server code (routes, etc.)
-
-// Email transporter configuration dengan fallback
-const createTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log('⚠️  Email configuration missing - emails will not be sent');
+    // Don't exit in production, just log and continue
+    console.log('⚠️  Continuing without database connection');
     return null;
   }
-
-  return nodemailer.createTransporter({
-    service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
 };
 
-// Routes
-app.use('/api/contact', require('./routes/contactRoutes'));
+// Initialize database dengan async handling
+const initializeServer = async () => {
+  try {
+    // Connect to MongoDB (non-blocking)
+    const dbConnection = await connectDB();
+    
+    // Routes
+    app.use('/api/contact', require('./routes/contactRoutes'));
 
-// API health check dengan database status
-app.get('/api/health', async (req, res) => {
-  const dbStatus = mongoose.connection.readyState;
-  const statusText = {
-    0: 'disconnected',
-    1: 'connected', 
-    2: 'connecting',
-    3: 'disconnecting'
-  };
+    // API health check
+    app.get('/api/health', (req, res) => {
+      const dbStatus = mongoose.connection.readyState;
+      const statusText = {
+        0: 'disconnected',
+        1: 'connected', 
+        2: 'connecting',
+        3: 'disconnecting'
+      };
 
-  res.json({ 
-    status: 'OK', 
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    database: {
-      status: statusText[dbStatus],
-      connected: dbStatus === 1
-    },
-    email: {
-      configured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASS)
-    }
-  });
-});
+      res.json({ 
+        status: 'OK', 
+        message: 'Server is running',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        database: {
+          status: statusText[dbStatus],
+          connected: dbStatus === 1
+        },
+        email: {
+          configured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASS)
+        }
+      });
+    });
 
-// Test endpoint untuk check environment variables
-app.get('/api/debug-env', (req, res) => {
-  res.json({
-    MONGODB_URI: process.env.MONGODB_URI ? '***SET***' : 'UNDEFINED',
-    EMAIL_USER: process.env.EMAIL_USER ? '***SET***' : 'UNDEFINED', 
-    EMAIL_PASS: process.env.EMAIL_PASS ? '***SET***' : 'UNDEFINED',
-    NODE_ENV: process.env.NODE_ENV,
-    FRONTEND_URL: process.env.FRONTEND_URL
-  });
-});
+    // Test endpoint untuk check environment variables
+    app.get('/api/debug-env', (req, res) => {
+      res.json({
+        MONGODB_URI: process.env.MONGODB_URI ? '***SET***' : 'UNDEFINED',
+        EMAIL_USER: process.env.EMAIL_USER ? '***SET***' : 'UNDEFINED', 
+        NODE_ENV: process.env.NODE_ENV,
+        FRONTEND_URL: process.env.FRONTEND_URL,
+        server_time: new Date().toISOString()
+      });
+    });
 
-// Serve frontend untuk semua route lainnya
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
+    // Test MongoDB connection endpoint
+    app.get('/api/test-db', async (req, res) => {
+      try {
+        if (mongoose.connection.readyState === 1) {
+          // Test dengan simple query
+          const result = await mongoose.connection.db.admin().ping();
+          res.json({
+            success: true,
+            message: 'Database connected and responsive',
+            ping: result,
+            connection: {
+              host: mongoose.connection.host,
+              database: mongoose.connection.name,
+              readyState: mongoose.connection.readyState
+            }
+          });
+        } else {
+          res.status(503).json({
+            success: false,
+            message: 'Database not connected',
+            readyState: mongoose.connection.readyState
+          });
+        }
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: 'Database test failed',
+          error: error.message
+        });
+      }
+    });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('🚨 Error:', err.stack);
-  res.status(500).json({ 
-    success: false,
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'production' ? {} : err.message
-  });
-});
+    // Serve frontend untuk semua route lainnya
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    });
 
-// 404 handler untuk API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ 
-    success: false,
-    message: 'API route not found' 
-  });
-});
+    // Error handling middleware
+    app.use((err, req, res, next) => {
+      console.error('🚨 Error:', err.stack);
+      res.status(500).json({ 
+        success: false,
+        message: 'Something went wrong!',
+        error: process.env.NODE_ENV === 'production' ? {} : err.message
+      });
+    });
+
+    // 404 handler untuk API routes
+    app.use('/api/*', (req, res) => {
+      res.status(404).json({ 
+        success: false,
+        message: 'API route not found' 
+      });
+    });
+
+    console.log('✅ Server initialized successfully!');
+    
+  } catch (error) {
+    console.error('❌ Server initialization failed:', error);
+    process.exit(1);
+  }
+};
+
+// Start the server
+initializeServer();
 
 module.exports = app;
-
